@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Oops — Error</title>
+  <style>
+    :root{ --bg:#000; --fg:#fff; --accent:#ff4757; }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      background:var(--bg);
+      color:var(--fg);
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:2rem;
+    }
+    .container{
+      text-align:center;
+      max-width:900px;
+      width:100%;
+    }
+    .code{
+      font-weight:900;
+      letter-spacing:0.02em;
+      font-size:clamp(3rem, 12vw, 8rem);
+      margin:0;
+      line-height:0.9;
+    }
+    .message{
+      font-size:clamp(1.1rem, 3.5vw, 1.75rem);
+      margin-top:1rem;
+      opacity:0.9;
+    }
+    .sub{
+      margin-top:1.25rem;
+      color:rgba(255,255,255,0.75);
+      font-size:clamp(0.9rem,2.5vw,1.05rem);
+    }
+    .actions{
+      margin-top:1.75rem;
+      display:flex;
+      gap:.75rem;
+      justify-content:center;
+      flex-wrap:wrap;
+    }
+    .btn{
+      background:transparent;
+      color:var(--fg);
+      border:2px solid rgba(255,255,255,0.12);
+      padding:.6rem 1rem;
+      border-radius:10px;
+      font-weight:600;
+      text-decoration:none;
+      transition:all .18s ease;
+      cursor:pointer;
+    }
+    .btn.primary{
+      background:linear-gradient(90deg,var(--accent),#ff6b81);
+      color:#000;
+      border:0;
+    }
+    .btn:hover{transform:translateY(-3px)}
+    .small-print{margin-top:1.25rem;color:rgba(255,255,255,0.45);font-size:.85rem}
+    #funny-msg{
+      margin-top:1.5rem;
+      font-size:1.2rem;
+      color:var(--accent);
+      font-weight:bold;
+      display:none;
+    }
+  </style>
+</head>
+<body>
+  <main class="container" role="main">
+    <h1 class="code">Error</h1>
+    <p class="message">Something went wrong.<br>We couldn't load the page you requested.</p>
+    <p class="sub">Try refreshing, or go back to the previous page.</p>
+
+    <div class="actions">
+      <a href="javascript:history.back()" class="btn">Go Back</a>
+      <a href="/" class="btn primary">Home</a>
+      <button class="btn" onclick="funnyMode()">Reload</button>
+    </div>
+
+    <p id="funny-msg">🚀 Hold tight! We're packing snacks for your trip back home...</p>
+    <p class="small-print">If the problem persists, contact support with the time and URL.</p>
+  </main>
+
+  <script>
+    function funnyMode(){
+      document.getElementById('funny-msg').style.display = 'block';
+      setTimeout(()=>{
+        window.location.href = '/';
+      }, 2500);
+    }
+  </script>
+</body>
+</html>
