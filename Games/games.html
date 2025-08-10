@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Talking_Charecter_game</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* General body styling */
+        body {
+            margin: 0;
+            overflow: hidden; /* Hide scrollbars as game fills screen */
+            background-color: #2c3e50; /* Dark background */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh; /* Full viewport height */
+            font-family: 'Inter', sans-serif; /* Modern font */
+            color: #ecf0f1; /* Light text color */
+        }
+
+        /* Container for the game and UI */
+        .game-container {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 90vw; /* Responsive width */
+            max-width: 950px; /* Max width for desktop */
+            aspect-ratio: 18 / 11; /* Maintain aspect ratio */
+            border: 5px solid #3498db; /* Blue border */
+            border-radius: 15px; /* Rounded corners */
+            overflow: hidden;
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.5); /* Subtle shadow */
+            background-color: #34495e; /* Slightly lighter dark background for container */
+        }
+
+        /* Canvas styling - now with background image */
+        canvas {
+            display: block;
+            background-image: url('background.jpg'); /* Your uploaded background image */
+            background-size: cover; /* Cover the entire canvas area */
+            background-position: center; /* Center the background image */
+            background-repeat: no-repeat; /* Do not repeat the image */
+            width: 100%;
+            height: 100%;
+            border-radius: 10px; /* Rounded corners for canvas */
+        }
+
+        /* Message box styling */
+        .message-box {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(44, 62, 80, 0.9); /* Dark semi-transparent background */
+            color: #ecf0f1;
+            padding: 15px 25px;
+            border-radius: 10px;
+            text-align: center;
+            font-size: 1.1em;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            min-width: 250px;
+            z-index: 10;
+            pointer-events: none; /* Allows clicks to pass through when hidden */
+        }
+
+        .message-box.visible {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: auto; /* Re-enable pointer events when visible */
+        }
+
+        .message-box button {
+            background-color: #27ae60; /* Green button */
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin-top: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: background-color 0.2s ease, transform 0.1s ease;
+        }
+
+        .message-box button:hover {
+            background-color: #2ecc71; /* Lighter green on hover */
+            transform: translateY(-2px);
+        }
+
+        /* Game instructions */
+        .instructions {
+            position: absolute;
+            top: 20px;
+            background-color: rgba(52, 73, 94, 0.8);
+            color: #ecf0f1;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 0.9em;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            z-index: 5;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .game-container {
+                width: 95vw;
+                height: auto; /* Let height adjust based on aspect ratio */
+            }
+            .message-box {
+                font-size: 0.9em;
+                padding: 10px 15px;
+                min-width: unset;
+                width: 80%;
+            }
+            .instructions {
+                font-size: 0.8em;
+                padding: 8px 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <canvas id="gameCanvas"></canvas>
+        <div class="instructions">
+            Use <i class="fas fa-arrow-up"></i> <i class="fas fa-arrow-down"></i> <i class="fas fa-arrow-left"></i> <i class="fas fa-arrow-right"></i> to move.<br>
+            Press <kbd>Enter</kbd> to interact with houses.
+        </div>
+        <div id="messageBox" class="message-box">
+            <p id="messageText"></p>
+            <button id="messageButton">Go to Page</button>
+        </div>
+    </div>
+
+    <script>
+        // Get the canvas element and its 2D rendering context
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Message box elements
+        const messageBox = document.getElementById('messageBox');
+        const messageText = document.getElementById('messageText');
+        const messageButton = document.getElementById('messageButton');
+
+        // Game state variables
+        const player = {
+            x: 430, // Initialized later based on canvas size
+            y: 430, // Initialized later based on canvas size
+            width: 70, // Increased width for better visibility of the image
+            height: 70, // Increased height for better visibility of the image
+            speed: 3,
+            image: new Image() // Create a new Image object for the player
+        };
+        // Set the source of the player image. Replace this URL with your desired character image.
+        player.image.src = 'https://gematrinator.com/wp-content/uploads/2022/06/cropped-gem-512x512-1-347x512.png'; // Example character image
+
+        let keys = {}; // Object to track pressed keys
+        let activeHouse = null; // Stores the house the player is currently interacting with
+
+        // Define the "houses" or interactive areas with relative positions
+        // Positions are percentages to adapt to canvas size
+        const housesData = [
+            {
+                name: 'Talk_charecter',
+                xPct: 0, yPct:42, widthPct: 20, heightPct: 25, color: '#f1c40f', // Fallback color
+                imageSrc: 'https://static.vecteezy.com/system/resources/previews/048/035/375/non_2x/three-people-talking-to-each-other-cartoon-style-free-png.png', // Placeholder for About Me house image
+                page: './game01.html',
+                description: 'make yourown talking charecter and play with it.'
+            },
+            {
+                name: 'Guss the Number',
+                xPct: 59, yPct: 10, widthPct: 13, heightPct: 24, color: '#2ecc71', // Fallback color
+                imageSrc: 'https://images-na.ssl-images-amazon.com/images/I/61BRwWBPKfL.png', // Placeholder for Projects house image
+                page: './game02.html',
+                description: 'Guess the number I am thinking of between 1 and 100.'
+            },
+            {
+                name: 'alphabets',
+                xPct: 73, yPct: 60, widthPct: 14, heightPct: 30, color: '#9b59b6', // Fallback color
+                imageSrc: 'https://w7.pngwing.com/pngs/603/530/png-transparent-abc-illustration-alphabet-song-child-english-alphabet-abc-child-text-people.png', // Placeholder for Blog house image
+                page: './game03.html',
+                description: 'play with alphabets and learn new words.'
+            },
+            
+        ];
+        let houses = []; // Will store calculated absolute positions and image objects for houses
+
+        // --- Event Listeners ---
+        window.addEventListener('keydown', (e) => {
+            keys[e.key] = true;
+            // Prevent default arrow key scrolling
+            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Enter'].includes(e.key)) {
+                e.preventDefault();
+            }
+        });
+
+        window.addEventListener('keyup', (e) => {
+            keys[e.key] = false;
+        });
+
+        // Handle window resizing
+        window.addEventListener('resize', resizeCanvas);
+
+        // Handle message box button click
+        messageButton.addEventListener('click', () => {
+            if (activeHouse && activeHouse.page) {
+                // Open the target page in a new tab/window
+                window.open(activeHouse.page, '_blank');
+            }
+            hideMessageBox();
+        });
+
+        // --- Functions ---
+
+        /**
+         * Resizes the canvas to fit its container and re-calculates element positions.
+         * Also loads house images if not already loaded.
+         */
+        function resizeCanvas() {
+            const container = canvas.parentElement;
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+
+            // Recalculate player initial position
+            if (player.x === 0 && player.y === 0) { // Only set initial position once
+                player.x = canvas.width / 2 - player.width / 2;
+                player.y = canvas.height / 2 - player.height / 2;
+            }
+
+            // Recalculate house positions and load images based on new canvas size
+            houses = housesData.map(houseData => {
+                const house = {
+                    name: houseData.name,
+                    x: canvas.width * (houseData.xPct / 100),
+                    y: canvas.height * (houseData.yPct / 100),
+                    width: canvas.width * (houseData.widthPct / 100),
+                    height: canvas.height * (houseData.heightPct / 100),
+                    color: houseData.color,
+                    page: houseData.page,
+                    description: houseData.description,
+                    image: new Image(), // Create image object for each house
+                    imageLoaded: false // Flag to track image loading
+                };
+
+                // Set image source and handle loading
+                house.image.src = houseData.imageSrc;
+                house.image.onload = () => {
+                    house.imageLoaded = true;
+                };
+                house.image.onerror = () => {
+                    console.error(`Failed to load image for house: ${house.name} from ${house.imageSrc}`);
+                    house.imageLoaded = false; // Ensure flag is false on error
+                };
+                return house;
+            });
+        }
+
+        /**
+         * Draws the character on the canvas.
+         */
+        function drawPlayer() {
+            // Draw the image if it's loaded, otherwise fallback to a circle (or nothing)
+            if (player.image.complete && player.image.naturalHeight !== 0) {
+                ctx.drawImage(player.image, player.x, player.y, player.width, player.height);
+            } else {
+                // Fallback to a simple circle if the image hasn't loaded yet
+                ctx.fillStyle = player.color; // Use player.color (still defined in the constant player object for fallback)
+                ctx.beginPath();
+                ctx.arc(player.x + player.width / 2, player.y + player.height / 2, player.width / 2, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        /**
+         * Draws a house on the canvas.
+         * @param {object} house - The house object to draw (with absolute pixel values).
+         */
+        function drawHouse(house) {
+            if (house.imageLoaded) {
+                // Draw the house image if loaded
+                ctx.drawImage(house.image, house.x, house.y, house.width, house.height);
+            } else {
+                // Fallback to drawing a colored rectangle with a simple roof if image not loaded
+                ctx.fillStyle = house.color;
+                ctx.fillRect(house.x, house.y, house.width, house.height);
+
+                // Draw a simple roof
+                ctx.beginPath();
+                ctx.moveTo(house.x - (house.width * 0.1), house.y);
+                ctx.lineTo(house.x + house.width / 2, house.y - (house.height * 0.3));
+                ctx.lineTo(house.x + house.width + (house.width * 0.1), house.y);
+                ctx.closePath();
+                ctx.fillStyle = house.color;
+                ctx.fill();
+                ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            }
+
+            // Draw house name (always draw, even if image not loaded)
+            ctx.fillStyle = 'white';
+            ctx.font = `${Math.max(12, house.width * 0.15)}px Inter`; // Responsive font size
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
+            ctx.fillText(house.name, house.x + house.width / 2, house.y + house.height + 20);
+        }
+
+        /**
+         * Updates the player's position based on key presses.
+         */
+        function updatePlayer() {
+            let moved = false;
+            let newX = player.x;
+            let newY = player.y;
+
+            // Calculate responsive speed based on canvas width
+            const currentSpeed = player.speed * (canvas.width / 900); // Scale speed relative to a reference width
+
+            if (keys['ArrowUp']) {
+                newY -= currentSpeed;
+                moved = true;
+            }
+            if (keys['ArrowDown']) {
+                newY += currentSpeed;
+                moved = true;
+            }
+            if (keys['ArrowLeft']) {
+                newX -= currentSpeed;
+                moved = true;
+            }
+            if (keys['ArrowRight']) {
+                newX += currentSpeed;
+                moved = true;
+            }
+
+            // Boundary checks for the player
+            newX = Math.max(0, Math.min(newX, canvas.width - player.width));
+            newY = Math.max(0, Math.min(newY, canvas.height - player.height));
+
+            // Only update if actually moved (prevents constant re-draw if not moving)
+            if (moved) {
+                player.x = newX;
+                player.y = newY;
+            }
+        }
+
+        /**
+         * Checks for collision between two rectangles.
+         * @param {object} rect1 - First rectangle {x, y, width, height}.
+         * @param {object} rect2 - Second rectangle {x, y, width, height}.
+         * @returns {boolean} True if they are colliding, false otherwise.
+         */
+        function checkCollision(rect1, rect2) {
+            return rect1.x < rect2.x + rect2.width &&
+                   rect1.x + rect1.width > rect2.x &&
+                   rect1.y < rect2.y + rect2.height &&
+                   rect1.y + rect1.height > rect2.y;
+        }
+
+        /**
+         * Displays the custom message box.
+         * @param {string} message - The text to display.
+         * @param {string} buttonText - The text for the action button.
+         */
+        function showMessageBox(message, buttonTxt) {
+            messageText.textContent = message;
+            messageButton.textContent = buttonTxt;
+            messageBox.classList.add('visible');
+            // Store the currently active house for the button's action
+            messageButton.onclick = () => {
+                if (activeHouse && activeHouse.page) {
+                    window.open(activeHouse.page, '_blank');
+                }
+                hideMessageBox();
+            };
+        }
+
+        /**
+         * Hides the custom message box.
+         */
+        function hideMessageBox() {
+            messageBox.classList.remove('visible');
+            activeHouse = null; // Clear active house when message box is hidden
+            messageButton.onclick = null; // Remove click handler
+        }
+
+        /**
+         * The main game loop. Updates game state and redraws elements.
+         */
+        function gameLoop() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear the canvas
+
+            // Draw all houses
+            houses.forEach(drawHouse);
+
+            // Update and draw player
+            updatePlayer();
+            drawPlayer();
+
+            // Check for player interaction with houses
+            let houseToInteract = null;
+            for (const house of houses) {
+                // Using a slightly larger interaction area than actual house size
+                // Scale interaction zone based on house size for responsiveness
+                const interactionZone = {
+                    x: house.x - (house.width * 0.2),
+                    y: house.y - (house.height * 0.2),
+                    width: house.width + (house.width * 0.4),
+                    height: house.height + (house.height * 0.4)
+                };
+                if (checkCollision(player, interactionZone)) {
+                    houseToInteract = house;
+                    break; // Interact with only one house at a time
+                }
+            }
+
+            // Display interaction prompt if near a house and no message box is open
+            if (houseToInteract && !messageBox.classList.contains('visible')) {
+                // Display hint on canvas
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+                ctx.fillRect(houseToInteract.x, houseToInteract.y - 40, houseToInteract.width, 30);
+                ctx.fillStyle = 'white';
+                ctx.font = '14px Inter';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(`Press ENTER to visit ${houseToInteract.name}`, houseToInteract.x + houseToInteract.width / 2, houseToInteract.y - 25);
+
+                if (keys['Enter']) {
+                    activeHouse = houseToInteract;
+                    showMessageBox(houseToInteract.description, `Go to ${activeHouse.name} Page`); // Use activeHouse.name here
+                    keys['Enter'] = false; // Consume the Enter key press
+                }
+            }
+
+
+            requestAnimationFrame(gameLoop); // Loop continuously
+        }
+
+        // Initialize canvas size and start the game loop when the window loads
+        window.onload = function () {
+            resizeCanvas(); // Set initial canvas size and position elements
+
+            // Wait for the player image to load before starting the game loop
+            player.image.onload = () => {
+                // After player image is loaded, ensure all house images are loaded before starting the loop
+                let imagesToLoad = houses.length;
+                let loadedImages = 0;
+
+                if (imagesToLoad === 0) { // No houses or all images already in cache
+                    gameLoop();
+                    return;
+                }
+
+                houses.forEach(house => {
+                    if (house.image.complete && house.image.naturalHeight !== 0) {
+                        loadedImages++;
+                    } else {
+                        house.image.onload = () => {
+                            loadedImages++;
+                            if (loadedImages === imagesToLoad) {
+                                gameLoop();
+                            }
+                        };
+                        house.image.onerror = () => {
+                            console.error(`Failed to load image for house: ${house.name}. Using fallback.`);
+                            loadedImages++; // Still count as "loaded" to proceed with game start
+                            if (loadedImages === imagesToLoad) {
+                                gameLoop();
+                            }
+                        };
+                    }
+                });
+
+                // If all images were already loaded from cache
+                if (loadedImages === imagesToLoad) {
+                    gameLoop();
+                }
+            };
+            // Handle player image loading errors
+            player.image.onerror = () => {
+                console.error("Failed to load player image. Falling back to default player rendering.");
+                // If player image fails, still try to load house images
+                let imagesToLoad = houses.length;
+                let loadedImages = 0;
+
+                if (imagesToLoad === 0) {
+                    gameLoop();
+                    return;
+                }
+
+                houses.forEach(house => {
+                    if (house.image.complete && house.image.naturalHeight !== 0) {
+                        loadedImages++;
+                    } else {
+                        house.image.onload = () => {
+                            loadedImages++;
+                            if (loadedImages === imagesToLoad) {
+                                gameLoop();
+                            }
+                        };
+                        house.image.onerror = () => {
+                            console.error(`Failed to load image for house: ${house.name}. Using fallback.`);
+                            loadedImages++;
+                            if (loadedImages === imagesToLoad) {
+                                gameLoop();
+                            }
+                        };
+                    }
+                });
+
+                if (loadedImages === imagesToLoad) {
+                    gameLoop();
+                }
+            };
+            // If the player image is already loaded (e.g., from cache), proceed to load house images
+            if (player.image.complete && player.image.naturalHeight !== 0) {
+                let imagesToLoad = houses.length;
+                let loadedImages = 0;
+
+                if (imagesToLoad === 0) {
+                    gameLoop();
+                    return;
+                }
+
+                houses.forEach(house => {
+                    if (house.image.complete && house.image.naturalHeight !== 0) {
+                        loadedImages++;
+                    } else {
+                        house.image.onload = () => {
+                            loadedImages++;
+                            if (loadedImages === imagesToLoad) {
+                                gameLoop();
+                            }
+                        };
+                        house.image.onerror = () => {
+                            console.error(`Failed to load image for house: ${house.name}. Using fallback.`);
+                            loadedImages++;
+                            if (loadedImages === imagesToLoad) {
+                                gameLoop();
+                            }
+                        };
+                    }
+                });
+
+                if (loadedImages === imagesToLoad) {
+                    gameLoop();
+                }
+            }
+        };
+
+    </script>
+</body>
+</html>

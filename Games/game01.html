@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Talking Character</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: "Inter", sans-serif;
+            background-color: #e0f2f7; /* Light blue background */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .container {
+            background-color: #ffffff;
+            border-radius: 20px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            max-width: 900px;
+            width: 100%;
+            border: 2px solid #b3e5fc; /* Light blue border */
+        }
+        canvas {
+            background-color: #f0f8ff; /* Alice blue */
+            border-radius: 15px;
+            border: 3px solid #81d4fa; /* Sky blue border */
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.05);
+            display: block;
+            max-width: 100%; /* Make canvas responsive */
+            height: auto;
+            aspect-ratio: 16 / 9; /* Maintain aspect ratio */
+            margin-bottom: 25px;
+        }
+        .btn {
+            padding: 12px 25px;
+            border-radius: 10px;
+            font-weight: 600;
+            transition: all 0.2s ease-in-out;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border: none;
+            cursor: pointer;
+        }
+        .btn-primary {
+            background-color: #29b6f6; /* Light blue */
+            color: white;
+        }
+        .btn-primary:hover {
+            background-color: #03a9f4; /* Darker blue */
+            transform: translateY(-2px);
+            box-shadow: 0 6px 10px rgba(0, 0, 0, 0.15);
+        }
+        .btn-secondary {
+            background-color: #ffb74d; /* Orange */
+            color: white;
+        }
+        .btn-secondary:hover {
+            background-color: #ffa726; /* Darker orange */
+            transform: translateY(-2px);
+            box-shadow: 0 6px 10px rgba(0, 0, 0, 0.15);
+        }
+        .btn-danger {
+            background-color: #ef5350; /* Red */
+            color: white;
+        }
+        .btn-danger:hover {
+            background-color: #e53935; /* Darker red */
+            transform: translateY(-2px);
+            box-shadow: 0 6px 10px rgba(0, 0, 0, 0.15);
+        }
+        .btn-disabled {
+            background-color: #bdbdbd; /* Gray */
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+        input[type="file"] {
+            display: none; /* Hide default file input */
+        }
+        .custom-file-upload {
+            border: 2px dashed #90caf9; /* Light blue dashed border */
+            border-radius: 10px;
+            padding: 15px 25px;
+            cursor: pointer;
+            color: #42a5f5; /* Blue text */
+            font-weight: 500;
+            display: inline-block;
+            transition: all 0.2s ease-in-out;
+        }
+        .custom-file-upload:hover {
+            background-color: #e3f2fd; /* Lighter blue on hover */
+        }
+        .input-group {
+            display: flex;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+        .input-group input[type="text"] {
+            flex-grow: 1;
+            padding: 12px 15px;
+            border: 1px solid #90caf9;
+            border-radius: 10px 0 0 10px;
+            outline: none;
+            font-size: 1rem;
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+        .input-group button {
+            border-radius: 0 10px 10px 0;
+            margin-left: -1px; /* Overlap border */
+        }
+        .message-box {
+            background-color: #e1f5fe; /* Lightest blue */
+            color: #0288d1; /* Darker blue */
+            border: 1px solid #81d4fa;
+            border-radius: 8px;
+            padding: 10px 15px;
+            margin-top: 20px;
+            text-align: center;
+            font-size: 0.9rem;
+            width: 100%;
+            max-width: 500px;
+        }
+        .button-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 15px;
+            width: 100%;
+            max-width: 700px;
+            margin-top: 20px;
+        }
+        /* Mobile adjustments */
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+            .button-grid {
+                grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            }
+            .btn {
+                padding: 10px 15px;
+                font-size: 0.9rem;
+            }
+            .input-group input[type="text"] {
+                font-size: 0.9rem;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
+
+    <div class="container">
+        <h1 class="text-4xl font-extrabold text-blue-700 mb-8 tracking-tight">My Talking Character</h1>
+
+        <!-- Canvas for character display -->
+        <canvas id="gameCanvas" class="w-full max-w-2xl bg-white border-4 border-blue-300 rounded-xl shadow-lg"></canvas>
+
+        <!-- Message Box -->
+        <div id="messageBox" class="message-box hidden"></div>
+
+        <!-- File Upload Section -->
+        <div class="mb-6 flex flex-col items-center">
+            <label for="characterUpload" class="custom-file-upload btn-primary inline-flex items-center space-x-2 transition duration-200 ease-in-out transform hover:scale-105">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                </svg>
+                <span>Upload Your Character (PNG)</span>
+            </label>
+            <input type="file" id="characterUpload" accept=".png" />
+            <p class="text-gray-500 text-sm mt-2">Only PNG images are supported.</p>
+        </div>
+
+        <!-- Voice Interaction Controls -->
+        <div class="flex flex-col md:flex-row items-center justify-center space-y-4 md:space-y-0 md:space-x-4 w-full mb-6">
+            <button id="recordBtn" class="btn btn-primary flex-1">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 inline-block" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4zm4 10.93A7.001 7.001 0 0017 8a1 1 0 10-2 0A5 5 0 015 8a1 1 0 00-2 0 7.001 7.001 0 006 6.93V17H6a1 1 0 100 2h8a1 1 0 100-2h-3v-2.07z" clip-rule="evenodd" />
+                </svg>
+                Record Voice
+            </button>
+            <button id="stopRecordBtn" class="btn btn-danger flex-1" disabled>
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 inline-block" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8 7a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1zm4 0a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                </svg>
+                Stop Recording
+            </button>
+            <button id="playBtn" class="btn btn-secondary flex-1" disabled>
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 inline-block" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
+                </svg>
+                Play Back
+            </button>
+        </div>
+
+        <!-- Text Input & Speak Button -->
+        <div class="input-group mb-8">
+            <input type="text" id="textInput" placeholder="Type something for your character to say..." class="p-3 border rounded-l-lg focus:ring-blue-500 focus:border-blue-500 flex-grow" />
+            <button id="speakTextBtn" class="btn btn-primary rounded-r-lg">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 inline-block" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M2 5a2 2 0 012-2h7a2 2 0 012 2v4a2 2 0 01-2 2H9l-3 3v-3H4a2 2 0 01-2-2V5z" />
+                    <path d="M15 7v2a4 4 0 01-4 4H9.027l-1 1H11a3 3 0 003-3V7h-3V5h3a2 2 0 012 2z" />
+                </svg>
+                Speak Text
+            </button>
+        </div>
+
+        <!-- Character Behavior Buttons -->
+        <div class="button-grid">
+            <button id="waveBtn" class="btn btn-primary">Wave</button>
+            <button id="jumpBtn" class="btn btn-primary">Jump</button>
+            <button id="wiggleBtn" class="btn btn-primary">Wiggle</button>
+            <button id="happyBtn" class="btn btn-primary">Happy</button>
+            <button id="confusedBtn" class="btn btn-primary">Confused</button>
+            <button id="idleBtn" class="btn btn-primary">Reset Pose</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const characterUpload = document.getElementById('characterUpload');
+        const recordBtn = document.getElementById('recordBtn');
+        const stopRecordBtn = document.getElementById('stopRecordBtn');
+        const playBtn = document.getElementById('playBtn');
+        const textInput = document.getElementById('textInput');
+        const speakTextBtn = document.getElementById('speakTextBtn');
+        const messageBox = document.getElementById('messageBox');
+
+        // Behavior buttons
+        const waveBtn = document.getElementById('waveBtn');
+        const jumpBtn = document.getElementById('jumpBtn');
+        const wiggleBtn = document.getElementById('wiggleBtn');
+        const happyBtn = document.getElementById('happyBtn');
+        const confusedBtn = document.getElementById('confusedBtn');
+        const idleBtn = document.getElementById('idleBtn');
+
+
+        let characterImage = new Image();
+        let audioChunks = [];
+        let mediaRecorder;
+        let audioContext;
+        let audioSource;
+        let isSpeaking = false; // Flag to control talking animation
+
+        // Character animation state
+        let characterState = {
+            x: 0, y: 0,
+            scaleX: 1, scaleY: 1,
+            rotation: 0,
+            animation: 'idle', // 'idle', 'talking', 'waving', 'jumping', 'wiggling', 'happy', 'confused'
+            animationProgress: 0, // 0 to 1 for current animation
+            animationDuration: 500 // Duration in ms for most animations
+        };
+
+        // --- Utility Functions ---
+
+        /**
+         * Displays a temporary message in the message box.
+         * @param {string} message The message to display.
+         * @param {string} type 'success', 'error', 'info' for styling (though only info is styled here).
+         */
+        function showMessage(message, type = 'info') {
+            messageBox.textContent = message;
+            messageBox.classList.remove('hidden');
+            // Basic styling based on type (can be expanded)
+            if (type === 'error') {
+                messageBox.style.backgroundColor = '#ffebee'; // Light red
+                messageBox.style.color = '#c62828'; // Dark red
+                messageBox.style.borderColor = '#ef9a9a'; // Red border
+            } else { // Default info/success
+                messageBox.style.backgroundColor = '#e1f5fe';
+                messageBox.style.color = '#0288d1';
+                messageBox.style.borderColor = '#81d4fa';
+            }
+            setTimeout(() => {
+                messageBox.classList.add('hidden');
+            }, 3000); // Hide after 3 seconds
+        }
+
+        /**
+         * Disables a button and adds a disabled class.
+         * @param {HTMLElement} button
+         */
+        function disableButton(button) {
+            button.disabled = true;
+            button.classList.add('btn-disabled');
+            button.classList.remove('btn-primary', 'btn-secondary', 'btn-danger'); // Remove existing styles
+        }
+
+        /**
+         * Enables a button and applies the correct style based on its ID.
+         * @param {HTMLElement} button
+         */
+        function enableButton(button) {
+            button.disabled = false;
+            button.classList.remove('btn-disabled');
+            if (button.id.includes('record')) {
+                button.classList.add('btn-primary');
+            } else if (button.id.includes('play')) {
+                button.classList.add('btn-secondary');
+            } else if (button.id.includes('stop')) {
+                button.classList.add('btn-danger');
+            } else { // For behavior buttons and speak text
+                button.classList.add('btn-primary');
+            }
+        }
+
+        // --- Canvas Drawing and Character Animation ---
+
+        /**
+         * Resizes the canvas to maintain aspect ratio and fit its container.
+         */
+        function resizeCanvas() {
+            const containerWidth = canvas.parentElement.clientWidth;
+            // Set canvas display size for CSS responsiveness
+            canvas.style.width = '100%';
+            canvas.style.height = `${(canvas.clientWidth * 9) / 16}px`; // Maintain 16:9 aspect ratio
+
+            // Set canvas internal drawing buffer size (high resolution)
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = canvas.clientWidth * dpr;
+            canvas.height = canvas.clientHeight * dpr;
+            ctx.scale(dpr, dpr);
+
+            // Recalculate character position
+            updateCharacterPosition();
+            drawCharacter(); // Redraw character after resize
+        }
+
+        /**
+         * Calculates and sets the character's initial position on the canvas.
+         */
+        function updateCharacterPosition() {
+            if (characterImage.width === 0 || characterImage.height === 0) return;
+
+            // Calculate character dimensions relative to canvas size
+            const maxCharacterHeight = canvas.height * 0.7; // Max 70% of canvas height
+            const maxCharacterWidth = canvas.width * 0.7; // Max 70% of canvas width
+
+            let drawWidth = characterImage.width;
+            let drawHeight = characterImage.height;
+
+            // Scale down if image is too large
+            if (drawHeight > maxCharacterHeight) {
+                drawWidth = (drawWidth / drawHeight) * maxCharacterHeight;
+                drawHeight = maxCharacterHeight;
+            }
+            if (drawWidth > maxCharacterWidth) {
+                drawHeight = (drawHeight / drawWidth) * maxCharacterWidth;
+                drawWidth = maxCharacterWidth;
+            }
+
+            characterState.width = drawWidth;
+            characterState.height = drawHeight;
+
+            // Center the character
+            characterState.x = (canvas.width / (window.devicePixelRatio || 1) - characterState.width) / 2;
+            characterState.y = (canvas.height / (window.devicePixelRatio || 1) - characterState.height) / 2;
+        }
+
+        /**
+         * Draws the character on the canvas with current animation state.
+         */
+        function drawCharacter() {
+            ctx.clearRect(0, 0, canvas.width / (window.devicePixelRatio || 1), canvas.height / (window.devicePixelRatio || 1));
+
+            if (characterImage.src) {
+                ctx.save(); // Save current canvas state
+
+                // Apply transformations based on animation state
+                let translateX = characterState.x + characterState.width / 2;
+                let translateY = characterState.y + characterState.height / 2;
+
+                ctx.translate(translateX, translateY); // Move origin to center of character
+                ctx.rotate(characterState.rotation); // Apply rotation
+                ctx.scale(characterState.scaleX, characterState.scaleY); // Apply scaling
+                ctx.translate(-characterState.width / 2, -characterState.height / 2); // Move origin back
+
+                ctx.drawImage(characterImage, 0, 0, characterState.width, characterState.height);
+
+                ctx.restore(); // Restore canvas state
+            } else {
+                ctx.fillStyle = '#64b5f6'; // Light blue
+                ctx.fillRect(0, 0, canvas.width / (window.devicePixelRatio || 1), canvas.height / (window.devicePixelRatio || 1));
+                ctx.fillStyle = '#ffffff';
+                ctx.font = '24px Inter';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('Upload a character to start!', canvas.width / (window.devicePixelRatio || 1) / 2, canvas.height / (window.devicePixelRatio || 1) / 2);
+            }
+        }
+
+        /**
+         * Updates character state for animation.
+         * @param {number} deltaTime Time elapsed since last frame.
+         */
+        function updateAnimation(deltaTime) {
+            characterState.animationProgress += deltaTime;
+            let progress = (characterState.animationProgress % characterState.animationDuration) / characterState.animationDuration;
+
+            // Reset transformations for each frame unless specifically animated
+            characterState.scaleX = 1;
+            characterState.scaleY = 1;
+            characterState.rotation = 0;
+            let baseCharacterY = (canvas.height / (window.devicePixelRatio || 1) - characterState.height) / 2;
+            characterState.y = baseCharacterY; // Reset to base Y
+
+            switch (characterState.animation) {
+                case 'talking':
+                    // Simple bobbing effect
+                    characterState.y = baseCharacterY + Math.sin(progress * Math.PI * 4) * 5; // Bob up and down 2 times per cycle
+                    characterState.scaleY = 1 + Math.sin(progress * Math.PI * 2) * 0.02; // Slight vertical squash/stretch
+                    break;
+                case 'waving':
+                    // Simulate waving by slight rotation and horizontal movement
+                    characterState.rotation = Math.sin(progress * Math.PI * 4) * 0.05; // Oscillate rotation
+                    characterState.x = ((canvas.width / (window.devicePixelRatio || 1) - characterState.width) / 2) + Math.sin(progress * Math.PI * 2) * 5; // Small horizontal movement
+                    if (progress > 0.99) characterState.animation = 'idle'; // End animation after one cycle
+                    break;
+                case 'jumping':
+                    // Simple jump curve
+                    let jumpHeight = 30;
+                    characterState.y = baseCharacterY - (Math.sin(progress * Math.PI) * jumpHeight); // Parabolic jump
+                    if (progress > 0.99) characterState.animation = 'idle';
+                    break;
+                case 'wiggle':
+                    characterState.rotation = Math.sin(progress * Math.PI * 8) * 0.03; // Fast small wiggles
+                    if (progress > 0.99) characterState.animation = 'idle';
+                    break;
+                case 'happy':
+                    characterState.scaleX = 1 + Math.sin(progress * Math.PI * 4) * 0.03;
+                    characterState.scaleY = 1 + Math.cos(progress * Math.PI * 4) * 0.03; // Bouncy scale
+                    if (progress > 0.99) characterState.animation = 'idle';
+                    break;
+                case 'confused':
+                    characterState.rotation = Math.sin(progress * Math.PI * 2) * 0.02; // Small left-right head tilt
+                    characterState.x = ((canvas.width / (window.devicePixelRatio || 1) - characterState.width) / 2) + Math.sin(progress * Math.PI * 6) * 2; // Small rapid horizontal jitter
+                    if (progress > 0.99) characterState.animation = 'idle';
+                    break;
+                case 'idle':
+                default:
+                    // Subtle breathing/idle animation
+                    characterState.scaleY = 1 + Math.sin(performance.now() * 0.002) * 0.005;
+                    break;
+            }
+            drawCharacter();
+        }
+
+        let lastTime = 0;
+        /**
+         * Main animation loop.
+         * @param {DOMHighResTimeStamp} currentTime
+         */
+        function animate(currentTime) {
+            const deltaTime = currentTime - lastTime;
+            lastTime = currentTime;
+
+            updateAnimation(deltaTime);
+            requestAnimationFrame(animate);
+        }
+
+        // --- Event Listeners ---
+
+        // Handle character image upload
+        characterUpload.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (file && file.type === 'image/png') {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    characterImage.src = e.target.result;
+                    characterImage.onload = () => {
+                        updateCharacterPosition();
+                        drawCharacter();
+                        showMessage('Character uploaded successfully!');
+                    };
+                    characterImage.onerror = () => {
+                        showMessage('Failed to load image. Please ensure it is a valid PNG.', 'error');
+                        characterImage.src = ''; // Clear source on error
+                    };
+                };
+                reader.readAsDataURL(file);
+            } else {
+                showMessage('Please upload a valid PNG image file.', 'error');
+                characterImage.src = ''; // Clear source if invalid file was previously loaded
+            }
+        });
+
+        // Handle record button click
+        recordBtn.addEventListener('click', async () => {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream);
+                audioChunks = [];
+
+                mediaRecorder.ondataavailable = (event) => {
+                    audioChunks.push(event.data);
+                };
+
+                mediaRecorder.onstop = () => {
+                    // Stop all tracks in the stream after recording
+                    stream.getTracks().forEach(track => track.stop());
+                    enableButton(playBtn);
+                    showMessage('Recording stopped. Ready to play!');
+                };
+
+                mediaRecorder.start();
+                showMessage('Recording started...', 'info');
+                disableButton(recordBtn);
+                enableButton(stopRecordBtn);
+                disableButton(playBtn);
+                disableButton(speakTextBtn); // Disable text-to-speech during recording
+            } catch (err) {
+                console.error('Error accessing microphone:', err);
+                showMessage('Error: Could not access microphone. Please check permissions.', 'error');
+            }
+        });
+
+        // Handle stop record button click
+        stopRecordBtn.addEventListener('click', () => {
+            if (mediaRecorder && mediaRecorder.state === 'recording') {
+                mediaRecorder.stop();
+                disableButton(stopRecordBtn);
+                enableButton(recordBtn);
+                enableButton(speakTextBtn); // Enable text-to-speech after recording
+            }
+        });
+
+        // Handle play button click
+        playBtn.addEventListener('click', async () => {
+            if (audioChunks.length > 0) {
+                const audioBlob = new Blob(audioChunks, { type: 'audio/wav' }); // or audio/ogg, audio/webm
+
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const arrayBuffer = await audioBlob.arrayBuffer();
+                const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+
+                audioSource = audioContext.createBufferSource();
+                audioSource.buffer = audioBuffer;
+
+                // Create a gain node for volume control (optional)
+                const gainNode = audioContext.createGain();
+                gainNode.gain.value = 1; // Full volume
+
+                // Create a BiquadFilterNode for pitch shift (more robust than playbackRate for some browsers)
+                // However, for simplicity and "Talking Tom" effect, playbackRate is more direct.
+                // Pitch shift using playbackRate:
+                audioSource.playbackRate.value = 1.5; // Example: 1.5 for higher pitch, 0.7 for lower
+
+                // Connect nodes: source -> gain -> destination
+                audioSource.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+
+                audioSource.onended = () => {
+                    isSpeaking = false;
+                    characterState.animation = 'idle'; // Reset animation after speech
+                    enableButton(recordBtn);
+                    enableButton(speakTextBtn);
+                    // No need to enable playBtn if it's already enabled by onstop
+                };
+
+                audioSource.start();
+                isSpeaking = true;
+                characterState.animation = 'talking'; // Trigger talking animation
+                showMessage('Playing back audio...', 'info');
+                disableButton(recordBtn);
+                disableButton(playBtn);
+                disableButton(speakTextBtn); // Disable text-to-speech during playback
+            } else {
+                showMessage('No audio recorded yet. Please record something first!', 'error');
+            }
+        });
+
+        // Handle speak text button click
+        speakTextBtn.addEventListener('click', () => {
+            const text = textInput.value.trim();
+            if (text) {
+                const utterance = new SpeechSynthesisUtterance(text);
+                // Optional: set voice, pitch, rate
+                utterance.pitch = 1.5; // Higher pitch
+                utterance.rate = 1.1;  // Slightly faster speech
+
+                utterance.onstart = () => {
+                    isSpeaking = true;
+                    characterState.animation = 'talking'; // Trigger talking animation
+                    disableButton(recordBtn);
+                    disableButton(playBtn);
+                    disableButton(speakTextBtn);
+                    showMessage('Character speaking...', 'info');
+                };
+
+                utterance.onend = () => {
+                    isSpeaking = false;
+                    characterState.animation = 'idle'; // Reset animation after speech
+                    enableButton(recordBtn);
+                    // Check if there's recorded audio to enable playBtn
+                    if (audioChunks.length > 0) enableButton(playBtn);
+                    enableButton(speakTextBtn);
+                };
+
+                utterance.onerror = (event) => {
+                    console.error('SpeechSynthesisUtterance.onerror', event);
+                    showMessage('Error speaking text. Your browser might not support text-to-speech.', 'error');
+                    isSpeaking = false;
+                    characterState.animation = 'idle';
+                    enableButton(recordBtn);
+                    if (audioChunks.length > 0) enableButton(playBtn);
+                    enableButton(speakTextBtn);
+                };
+
+                window.speechSynthesis.speak(utterance);
+            } else {
+                showMessage('Please enter some text to speak.', 'error');
+            }
+        });
+
+        // Add event listeners for behavior buttons
+        waveBtn.addEventListener('click', () => { characterState.animation = 'waving'; characterState.animationProgress = 0; characterState.animationDuration = 800; });
+        jumpBtn.addEventListener('click', () => { characterState.animation = 'jumping'; characterState.animationProgress = 0; characterState.animationDuration = 600; });
+        wiggleBtn.addEventListener('click', () => { characterState.animation = 'wiggle'; characterState.animationProgress = 0; characterState.animationDuration = 700; });
+        happyBtn.addEventListener('click', () => { characterState.animation = 'happy'; characterState.animationProgress = 0; characterState.animationDuration = 900; });
+        confusedBtn.addEventListener('click', () => { characterState.animation = 'confused'; characterState.animationProgress = 0; characterState.animationDuration = 1000; });
+        idleBtn.addEventListener('click', () => { characterState.animation = 'idle'; characterState.animationProgress = 0; characterState.animationDuration = 500; });
+
+        // Initial setup
+        window.onload = () => {
+            resizeCanvas();
+            drawCharacter(); // Draw initial blank canvas or placeholder
+            requestAnimationFrame(animate); // Start animation loop
+        };
+
+        // Handle window resize
+        window.addEventListener('resize', resizeCanvas);
+
+        // Ensure character image is empty string if not loaded, to prevent error on initial draw
+        characterImage.src = '';
+    </script>
+</body>
+</html>

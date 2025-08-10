@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Alphabet Game</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts - Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8; /* Light blue-gray background */
+        }
+        .container {
+            max-width: 900px; /* Wider container */
+        }
+        .game-card {
+            background-color: #ffffff;
+            border-radius: 1rem; /* More rounded */
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1); /* Stronger shadow */
+            padding: 2.5rem; /* More padding */
+        }
+        .btn-primary {
+            background-color: #4f46e5; /* Deeper indigo */
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.75rem; /* Rounded button */
+            transition: background-color 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .btn-primary:hover {
+            background-color: #4338ca; /* Darker indigo on hover */
+        }
+        .btn-secondary {
+            background-color: #e2e8f0; /* Light gray */
+            color: #4a5568; /* Darker text */
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.75rem;
+            transition: background-color 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+        .btn-secondary:hover {
+            background-color: #cbd5e0; /* Slightly darker gray on hover */
+        }
+        input[type="text"] {
+            border: 2px solid #cbd5e0; /* Light gray border */
+            border-radius: 0.5rem;
+            padding: 0.75rem 1rem;
+            transition: border-color 0.3s ease;
+        }
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #6366f1; /* Indigo focus border */
+        }
+        .message-box {
+            background-color: #f0f9ff; /* Lightest blue */
+            border: 1px solid #bfdbfe; /* Light blue border */
+            color: #1e40af; /* Dark blue text */
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+        }
+        .error-message {
+            background-color: #fef2f2; /* Lightest red */
+            border: 1px solid #fecaca; /* Light red border */
+            color: #b91c1c; /* Dark red text */
+        }
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left-color: #6366f1;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4">
+    <div class="container mx-auto flex flex-col items-center">
+        <h1 class="text-4xl font-bold text-gray-800 mb-8 tracking-tight">The Alphabet Game 🚀</h1>
+
+        <div id="game-container" class="game-card w-full flex flex-col gap-6">
+
+            <!-- Initial State: Start Button -->
+            <div id="start-screen" class="flex flex-col items-center gap-4 text-center">
+                <p class="text-lg text-gray-700">Let's play The Alphabet Game! I'll pick a word, then you pick one. The next word will start with the last letter of the previous word.</p>
+                <button id="start-game-btn" class="btn-primary">Start Game</button>
+            </div>
+
+            <!-- Category Input Screen -->
+            <div id="category-screen" class="hidden flex-col items-center gap-4">
+                <label for="category-input" class="text-xl font-semibold text-gray-700">First, choose a category:</label>
+                <input type="text" id="category-input" placeholder="e.g., Fruits, Animals, Countries" class="w-full max-w-sm">
+                <div class="flex gap-4">
+                    <button id="confirm-category-btn" class="btn-primary">Confirm Category</button>
+                    <button id="reset-game-btn-category" class="btn-secondary">Reset Game</button>
+                </div>
+                <div id="category-message" class="message-box w-full max-w-sm hidden mt-2"></div>
+            </div>
+
+            <!-- Game Play Screen -->
+            <div id="game-play-screen" class="hidden flex-col gap-6">
+                <div class="flex justify-between items-center mb-4">
+                    <p class="text-xl text-gray-600">Category: <span id="current-category" class="font-bold text-indigo-700"></span></p>
+                    <p class="text-xl text-gray-600">Next Word Must Start With: <span id="current-letter" class="text-3xl font-extrabold text-indigo-800">A</span></p>
+                </div>
+
+                <div id="game-messages" class="message-box text-center mb-4"></div>
+
+                <!-- User Input -->
+                <div id="user-input-section" class="flex flex-col gap-4">
+                    <label for="user-word-input" class="text-lg font-semibold text-gray-700">Your turn! Enter a word:</label>
+                    <input type="text" id="user-word-input" placeholder="Enter your word here" class="w-full">
+                    <div class="flex gap-4 justify-center">
+                        <button id="submit-word-btn" class="btn-primary flex items-center justify-center gap-2">
+                            <span id="submit-word-text">Submit Word</span>
+                            <div id="submit-word-spinner" class="spinner hidden"></div>
+                        </button>
+                        <button id="pass-btn" class="btn-secondary">Pass</button>
+                    </div>
+                    <div id="user-word-message" class="message-box w-full hidden mt-2"></div>
+                </div>
+
+                <!-- Bot Output -->
+                <div id="bot-output-section" class="flex flex-col gap-2 mt-4 hidden">
+                    <p class="text-lg text-gray-700">My turn! I chose:</p>
+                    <p id="bot-word-display" class="text-2xl font-bold text-green-700"></p>
+                    <div id="bot-loading-indicator" class="flex items-center gap-2 text-indigo-600 hidden">
+                        <div class="spinner"></div>
+                        <span>Thinking...</span>
+                    </div>
+                </div>
+
+                <!-- Used Words -->
+                <div class="mt-6">
+                    <p class="text-lg font-semibold text-gray-700 mb-2">Words Used So Far:</p>
+                    <ul id="used-words-list" class="list-disc list-inside text-gray-600 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-1">
+                        <!-- Words will be dynamically added here -->
+                    </ul>
+                </div>
+
+                <!-- Game Controls -->
+                <div class="flex justify-center gap-4 mt-8">
+                    <button id="reset-game-btn" class="btn-secondary">Reset Game</button>
+                </div>
+            </div>
+
+            <!-- Game Over Screen -->
+            <div id="game-over-screen" class="hidden flex-col items-center gap-4 text-center">
+                <p id="game-over-message" class="text-2xl font-bold text-red-600"></p>
+                <button id="play-again-btn" class="btn-primary">Play Again</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        // Element references
+        const startScreen = document.getElementById('start-screen');
+        const startGameBtn = document.getElementById('start-game-btn');
+
+        const categoryScreen = document.getElementById('category-screen');
+        const categoryInput = document.getElementById('category-input');
+        const confirmCategoryBtn = document.getElementById('confirm-category-btn');
+        const categoryMessage = document.getElementById('category-message');
+        const resetGameBtnCategory = document.getElementById('reset-game-btn-category');
+
+        const gamePlayScreen = document.getElementById('game-play-screen');
+        const currentCategoryDisplay = document.getElementById('current-category');
+        const currentLetterDisplay = document.getElementById('current-letter');
+        const gameMessages = document.getElementById('game-messages');
+
+        const userInputSection = document.getElementById('user-input-section');
+        const userWordInput = document.getElementById('user-word-input');
+        const submitWordBtn = document.getElementById('submit-word-btn');
+        const submitWordText = document.getElementById('submit-word-text');
+        const submitWordSpinner = document.getElementById('submit-word-spinner');
+        const passBtn = document.getElementById('pass-btn');
+        const userWordMessage = document.getElementById('user-word-message');
+
+        const botOutputSection = document.getElementById('bot-output-section');
+        const botWordDisplay = document.getElementById('bot-word-display');
+        const botLoadingIndicator = document.getElementById('bot-loading-indicator');
+
+        const usedWordsList = document.getElementById('used-words-list');
+        const resetGameBtn = document.getElementById('reset-game-btn');
+
+        const gameOverScreen = document.getElementById('game-over-screen');
+        const gameOverMessage = document.getElementById('game-over-message');
+        const playAgainBtn = document.getElementById('play-again-btn');
+
+        // Game State Variables
+        let currentCategory = '';
+        let currentLetter = 'A'; // Start with 'A' for the first word (bot's)
+        let usedWords = new Set();
+        let isUserTurn = false; // Tracks whose turn it is
+        let gameActive = false;
+        // The alphabet is still useful for general reference or if we ever wanted to cycle letters for another rule
+        const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+
+        // --- Helper Functions ---
+
+        /**
+         * Displays a message in a specified message box.
+         * @param {HTMLElement} element - The message box element.
+         * @param {string} message - The message to display.
+         * @param {boolean} isError - True if it's an error message, false otherwise.
+         */
+        function showMessage(element, message, isError = false) {
+            element.textContent = message;
+            element.classList.remove('hidden', 'error-message');
+            element.classList.add('block');
+            if (isError) {
+                element.classList.add('error-message');
+            }
+        }
+
+        /**
+         * Hides a message box.
+         * @param {HTMLElement} element - The message box element.
+         */
+        function hideMessage(element) {
+            element.classList.add('hidden');
+            element.classList.remove('block', 'error-message');
+            element.textContent = '';
+        }
+
+        /**
+         * Sets the loading state for a button with spinner.
+         * @param {HTMLElement} button - The button element.
+         * @param {HTMLElement} textElement - The text element inside the button.
+         * @param {HTMLElement} spinnerElement - The spinner element inside the button.
+         * @param {boolean} isLoading - True to show loading, false to hide.
+         * @param {string} originalText - The original text to restore when not loading.
+         */
+        function setLoading(button, textElement, spinnerElement, isLoading, originalText) {
+            if (isLoading) {
+                button.disabled = true;
+                textElement.classList.add('hidden');
+                spinnerElement.classList.remove('hidden');
+            } else {
+                button.disabled = false;
+                textElement.classList.remove('hidden');
+                spinnerElement.classList.add('hidden');
+                textElement.textContent = originalText;
+            }
+        }
+
+        /**
+         * Updates the displayed list of used words.
+         */
+        function updateUsedWordsDisplay() {
+            usedWordsList.innerHTML = ''; // Clear existing list
+            usedWords.forEach(word => {
+                const li = document.createElement('li');
+                li.textContent = word;
+                li.classList.add('text-gray-600', 'text-base');
+                usedWordsList.appendChild(li);
+            });
+        }
+
+        /**
+         * Resets the game to its initial state.
+         */
+        function resetGame() {
+            currentCategory = '';
+            currentLetter = 'A'; // Reset for first word to be 'A' again
+            usedWords.clear();
+            isUserTurn = false;
+            gameActive = false;
+
+            // Reset UI
+            hideMessage(categoryMessage);
+            hideMessage(gameMessages);
+            hideMessage(userWordMessage);
+            userWordInput.value = '';
+            botWordDisplay.textContent = '';
+            usedWordsList.innerHTML = '';
+            currentCategoryDisplay.textContent = '';
+            currentLetterDisplay.textContent = 'A'; // Display A as the starting letter for the very first word
+
+            startScreen.classList.remove('hidden');
+            categoryScreen.classList.add('hidden');
+            gamePlayScreen.classList.add('hidden');
+            gameOverScreen.classList.add('hidden');
+            userInputSection.classList.remove('hidden');
+            botOutputSection.classList.add('hidden');
+            setLoading(submitWordBtn, submitWordText, submitWordSpinner, false, 'Submit Word');
+        }
+
+        /**
+         * Ends the game and displays a message.
+         * @param {string} message - The game over message.
+         */
+        function endGame(message) {
+            gameActive = false;
+            gameOverMessage.textContent = message;
+            gamePlayScreen.classList.add('hidden');
+            gameOverScreen.classList.remove('hidden');
+            hideMessage(gameMessages); // Hide any lingering game messages
+            hideMessage(userWordMessage); // Hide any lingering user input messages
+        }
+
+        // --- Game Logic ---
+
+        /**
+         * Handles the start of the game, moving to category selection.
+         */
+        startGameBtn.addEventListener('click', () => {
+            startScreen.classList.add('hidden');
+            categoryScreen.classList.remove('hidden');
+            categoryInput.focus();
+        });
+
+        /**
+         * Confirms the chosen category and starts the game play.
+         */
+        confirmCategoryBtn.addEventListener('click', () => {
+            const category = categoryInput.value.trim();
+            if (category) {
+                currentCategory = category;
+                currentCategoryDisplay.textContent = currentCategory;
+                gameActive = true;
+                categoryScreen.classList.add('hidden');
+                gamePlayScreen.classList.remove('hidden');
+                botOutputSection.classList.remove('hidden'); // Bot goes first
+
+                showMessage(gameMessages, `Category set to "${currentCategory}". I'll start with a word beginning with 'A'!`, false);
+                isUserTurn = false; // Bot's turn
+                botTurn(); // Immediately start bot's turn
+            } else {
+                showMessage(categoryMessage, 'Please enter a category!', true);
+            }
+        });
+
+        /**
+         * Handles the user's word submission.
+         */
+        submitWordBtn.addEventListener('click', () => {
+            if (!isUserTurn || !gameActive) return;
+
+            const userWord = userWordInput.value.trim();
+            hideMessage(userWordMessage); // Clear previous message
+
+            if (!userWord) {
+                showMessage(userWordMessage, 'Please enter a word.', true);
+                return;
+            }
+
+            if (!userWord.toUpperCase().startsWith(currentLetter)) {
+                showMessage(userWordMessage, `Your word must start with '${currentLetter}'.`, true);
+                return;
+            }
+
+            if (usedWords.has(userWord.toLowerCase())) {
+                showMessage(userWordMessage, `"${userWord}" has already been used. Try another one!`, true);
+                return;
+            }
+
+            // Valid word
+            usedWords.add(userWord.toLowerCase());
+            updateUsedWordsDisplay();
+            userWordInput.value = ''; // Clear input
+
+            // Determine the next letter from the last letter of the submitted word
+            if (userWord.length > 0) {
+                currentLetter = userWord.slice(-1).toUpperCase();
+                currentLetterDisplay.textContent = currentLetter;
+            } else {
+                // Fallback if somehow word is empty (shouldn't happen with validation)
+                currentLetter = 'A'; // Reset or some error state
+            }
+
+            showMessage(gameMessages, `You chose: "${userWord}". My turn! The next word should start with '${currentLetter}'.`);
+            isUserTurn = false;
+            botTurn();
+        });
+
+        /**
+         * Handles the "Pass" action by the user.
+         */
+        passBtn.addEventListener('click', () => {
+            if (!isUserTurn || !gameActive) return;
+
+            endGame(`You passed! I win!`);
+        });
+
+        /**
+         * Handles the bot's turn using the Gemini API.
+         */
+        async function botTurn() {
+            if (!gameActive) return;
+
+            userInputSection.classList.add('hidden'); // Hide user input during bot turn
+            botOutputSection.classList.remove('hidden');
+            botWordDisplay.textContent = '';
+            botLoadingIndicator.classList.remove('hidden');
+            hideMessage(gameMessages);
+            hideMessage(userWordMessage); // Ensure no old messages linger
+
+            // Define a list of common words for the AI to try, in case the LLM struggles
+            // Note: This fallback list should ideally be much larger for a good game experience
+            const fallbackWords = {
+                'A': ['Apple', 'Ant', 'Apricot', 'Acorn', 'Asparagus'],
+                'B': ['Banana', 'Bear', 'Ball', 'Book', 'Bird'],
+                'C': ['Cat', 'Carrot', 'Cloud', 'Cow', 'Chair'],
+                'D': ['Dog', 'Dolphin', 'Desk', 'Donkey', 'Dragon'],
+                'E': ['Elephant', 'Egg', 'Eagle', 'Earth', 'Elbow'],
+                'F': ['Fish', 'Frog', 'Flower', 'Fox', 'Foot'],
+                'G': ['Grape', 'Goat', 'Grass', 'Giraffe', 'Glass'],
+                'H': ['House', 'Horse', 'Hand', 'Hat', 'Honey'],
+                'I': ['Igloo', 'Insect', 'Ice', 'Island', 'Ink'],
+                'J': ['Jacket', 'Jellyfish', 'Jeans', 'Jug', 'Jewel'],
+                'K': ['Kangaroo', 'Key', 'Kite', 'Koala', 'Knee'],
+                'L': ['Lion', 'Lemon', 'Leaf', 'Lamp', 'Lake'],
+                'M': ['Monkey', 'Mango', 'Mouse', 'Mountain', 'Moon'],
+                'N': ['Nose', 'Nut', 'Nest', 'Night', 'Noodle'],
+                'O': ['Orange', 'Owl', 'Ocean', 'Onion', 'Ostrich'],
+                'P': ['Pig', 'Peach', 'Pencil', 'Pear', 'Penguin'],
+                'Q': ['Queen', 'Quail', 'Quilt', 'Question', 'Quokka'],
+                'R': ['Rabbit', 'Rainbow', 'River', 'Rock', 'Rose'],
+                'S': ['Snake', 'Strawberry', 'Sun', 'Star', 'Shoe'],
+                'T': ['Tiger', 'Tree', 'Table', 'Tomato', 'Turtle'],
+                'U': ['Umbrella', 'Unicorn', 'Urn', 'Umpire', 'Underwear'],
+                'V': ['Violin', 'Vase', 'Vegetable', 'Van', 'Vulture'],
+                'W': ['Water', 'Wolf', 'Window', 'Whale', 'Watch'],
+                'X': ['X-ray', 'Xylophone'], // Limited words for X
+                'Y': ['Yak', 'Yacht', 'Yarn', 'Yoga', 'Yogurt'],
+                'Z': ['Zebra', 'Zoo', 'Zipper', 'Zero', 'Zeus'],
+            };
+
+
+            const prompt = `Name a ${currentCategory} starting with the letter '${currentLetter}'. Do not use any of these words: ${Array.from(usedWords).join(', ')}. Provide only the single word, no other text or punctuation.`;
+
+            let retries = 0;
+            const maxRetries = 5;
+            const baseDelay = 1000; // 1 second
+
+            while (retries < maxRetries) {
+                try {
+                    const payload = {
+                        contents: [{ parts: [{ text: prompt }] }],
+                    };
+                    // Use an empty string for apiKey, Canvas will inject it at runtime
+                    const apiKey = "AIzaSyBFzTklGOqIXve_GsDiOnWLgWYI3lZyVYY";
+                    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!response.ok) {
+                        if (response.status === 429) { // Too Many Requests
+                            const delay = baseDelay * Math.pow(2, retries) + Math.random() * 500; // Exponential backoff with jitter
+                            console.warn(`Rate limit hit. Retrying in ${delay / 1000}s...`);
+                            await new Promise(res => setTimeout(res, delay));
+                            retries++;
+                            continue;
+                        }
+                        throw new Error(`API error: ${response.status} ${response.statusText}`);
+                    }
+
+                    const result = await response.json();
+
+                    // Check for valid response structure
+                    if (result.candidates && result.candidates.length > 0 &&
+                        result.candidates[0].content && result.candidates[0].content.parts &&
+                        result.candidates[0].content.parts.length > 0) {
+                        let botWord = result.candidates[0].content.parts[0].text.trim();
+
+                        // Basic cleaning of the word (remove quotes, extra text, take first word)
+                        botWord = botWord.replace(/["'.]/g, '').split(/\s+/)[0];
+                        botWord = botWord.charAt(0).toUpperCase() + botWord.slice(1).toLowerCase(); // Ensure first letter capitalized, rest lowercase
+
+                        if (botWord.toUpperCase().startsWith(currentLetter) && !usedWords.has(botWord.toLowerCase()) && botWord.length > 1) {
+                            usedWords.add(botWord.toLowerCase());
+                            updateUsedWordsDisplay();
+                            botWordDisplay.textContent = botWord;
+
+                            // Determine the next letter from the last letter of the bot's word
+                            if (botWord.length > 0) {
+                                currentLetter = botWord.slice(-1).toUpperCase();
+                                currentLetterDisplay.textContent = currentLetter;
+                            }
+
+                            showMessage(gameMessages, `I chose: "${botWord}". Your turn! The next word should start with '${currentLetter}'.`);
+                            botLoadingIndicator.classList.add('hidden');
+                            userInputSection.classList.remove('hidden'); // Show user input again
+                            isUserTurn = true;
+                            userWordInput.focus();
+                            return; // Success, exit function
+                        } else {
+                            // If bot generates an invalid word (e.g., already used, wrong letter, or something generic)
+                            console.warn('Bot generated an invalid word or could not find one:', botWord);
+                            // Fallback to pre-defined words
+                            const fallbackWord = getFallbackWord(currentLetter, usedWords, fallbackWords);
+                            if (fallbackWord) {
+                                usedWords.add(fallbackWord.toLowerCase());
+                                updateUsedWordsDisplay();
+                                botWordDisplay.textContent = fallbackWord;
+
+                                // Determine the next letter from the last letter of the fallback word
+                                if (fallbackWord.length > 0) {
+                                    currentLetter = fallbackWord.slice(-1).toUpperCase();
+                                    currentLetterDisplay.textContent = currentLetter;
+                                }
+
+                                showMessage(gameMessages, `I chose (fallback): "${fallbackWord}". Your turn! The next word should start with '${currentLetter}'.`);
+                                botLoadingIndicator.classList.add('hidden');
+                                userInputSection.classList.remove('hidden');
+                                isUserTurn = true;
+                                userWordInput.focus();
+                                return;
+                            }
+                            retries++;
+                            const delay = baseDelay * Math.pow(2, retries) + Math.random() * 500;
+                            await new Promise(res => setTimeout(res, delay));
+                            continue;
+                        }
+                    } else {
+                        throw new Error('Invalid API response structure.');
+                    }
+                } catch (error) {
+                    console.error('Error in botTurn:', error);
+                    retries++;
+                    const delay = baseDelay * Math.pow(2, retries) + Math.random() * 500;
+                    console.warn(`Attempt ${retries} failed. Retrying in ${delay / 1000}s...`);
+                    await new Promise(res => setTimeout(res, delay));
+                }
+            }
+
+            // If all retries fail, and no fallback word is found
+            botLoadingIndicator.classList.add('hidden');
+            botWordDisplay.textContent = 'I could not think of a word.';
+            endGame(`I couldn't think of a ${currentCategory} starting with '${currentLetter}'. You win!`);
+        }
+
+        /**
+         * Gets a fallback word from a predefined list.
+         * @param {string} letter - The current letter.
+         * @param {Set<string>} currentUsedWords - Set of words already used.
+         * @param {object} fallbackDictionary - The object containing predefined words.
+         * @returns {string|null} A suitable fallback word or null if none found.
+         */
+        function getFallbackWord(letter, currentUsedWords, fallbackDictionary) {
+            const potentialWords = fallbackDictionary[letter];
+            if (potentialWords) {
+                for (const word of potentialWords) {
+                    if (!currentUsedWords.has(word.toLowerCase())) {
+                        return word;
+                    }
+                }
+            }
+            return null;
+        }
+
+        // --- Event Listeners for Reset and Play Again ---
+        resetGameBtn.addEventListener('click', resetGame);
+        resetGameBtnCategory.addEventListener('click', resetGame);
+        playAgainBtn.addEventListener('click', resetGame);
+
+        // Allow pressing Enter to submit word
+        userWordInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                submitWordBtn.click();
+            }
+        });
+
+        categoryInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                confirmCategoryBtn.click();
+            }
+        });
+    </script>
+</body>
+</html>
